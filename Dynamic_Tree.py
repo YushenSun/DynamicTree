@@ -1,10 +1,14 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import re
 import matplotlib
+import re
 
-# 配置中文字体
-matplotlib.rcParams['font.family'] = 'SimHei'  # 使用黑体字体
+# 使用系统字体路径手动设置中文字体（适用于 Windows）
+matplotlib.rcParams['font.family'] = 'STHeiti'  # 指定字体为微软雅黑
+matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
+# 如果你希望使用其他字体，可以设置其路径
+# matplotlib.font_manager.fontManager.addfont('C:/Windows/Fonts/msyh.ttc')
 
 class Node:
     def __init__(self, id, player, actions, branches=None, payoffs=None):
@@ -54,8 +58,7 @@ class GameTree:
             for action, next_node_id in node.branches.items():
                 G.add_edge(node.id, next_node_id, label=action)
 
-        # 使用 graphviz_layout 生成层次结构的布局
-        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")  # 使用graphviz布局，层次结构
+        pos = nx.spring_layout(G)  # 使用spring_layout布局
         labels = nx.get_edge_attributes(G, 'label')
         
         # 绘制博弈树
@@ -152,11 +155,11 @@ def print_game_tree(game_tree):
             print(f"  决策者: {node.player}")
             print(f"  行动: {node.actions}")
             if node.branches:
-                print(f"  后续:")
+                print(f"  后续:") 
                 for action, next_node in node.branches.items():
                     print(f"    {action} -> {next_node}")
 
-# 示例代码：如何使用解析、解决博弈树和可视化功能
+# 示例代码：如何使用解析、求解博弈树和可视化功能
 filename = 'game_tree.txt'  # 假设文件名为 game_tree.txt
 game_tree = parse_game_tree_from_file(filename)
 
@@ -168,4 +171,3 @@ game_tree.visualize()
 
 # 求解博弈树的纳什均衡
 #game_tree.solve_nash_equilibrium()
-
