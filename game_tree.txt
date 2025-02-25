@@ -3,7 +3,7 @@ Node 1:
   Actions: [L, R]
   Subsequent:
     L -> Node 2
-    R -> Node 3
+    R ->Terminal Node 3
 
 Node 2:
   Decision Maker: B

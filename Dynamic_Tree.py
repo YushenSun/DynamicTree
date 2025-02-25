@@ -7,8 +7,8 @@ from matplotlib import font_manager
 # Manually load the font for English
 matplotlib.rcParams['font.family'] = 'Arial'  # Using Arial font
 matplotlib.rcParams['axes.unicode_minus'] = False  # To display negative signs
-# 使用Arial字体，并确保负号能够正确显示
 
+# Node class definition
 class Node:
     def __init__(self, id, player, actions, branches=None, payoffs=None):
         """
@@ -20,7 +20,9 @@ class Node:
         self.actions = actions  # Possible actions for the player
         self.branches = branches or {}  # The branches leading to the next nodes
         self.payoffs = payoffs  # For leaf nodes, contains (A payoff, B payoff)
-        # 对象属性：节点ID，决策者，行动，分支（后续节点），收益
+        self.status = "undecided"  # Node status: "undecided" or "decided"
+        self.best_action = None  # The best action for the node once it's decided
+
 
 class GameTree:
     def __init__(self):
@@ -44,45 +46,76 @@ class GameTree:
         Use backward induction to solve the Nash equilibrium in the game tree.
         使用逆向归纳法求解博弈树中的纳什均衡
         """
-        for node_id in sorted(self.nodes.keys(), reverse=True):  # Assume node IDs are numeric, process in reverse order
-            node = self.nodes[node_id]  # Get the current node
-            if node.payoffs is not None:
-                continue  # Skip if it's a leaf node with payoffs
-            # 如果是叶子节点，则跳过
-            
-            # Check if the node has valid branches and payoffs for backward induction
-            if node.branches:  # Ensure that the node has branches
-                if node.player == 'A':
-                    # If it's A's turn, A will maximize their payoff
-                    best_action = max(
-                        node.branches, 
-                        key=lambda action: self.nodes[node.branches[action]].payoffs[0] 
-                        if node.branches[action] in self.nodes and self.nodes[node.branches[action]].payoffs is not None
-                        else float('-inf')
-                    )
-                    node.best_action = best_action
-                elif node.player == 'B':
-                    # If it's B's turn, B will maximize their payoff
-                    best_action = max(
-                        node.branches, 
-                        key=lambda action: self.nodes[node.branches[action]].payoffs[1] 
-                        if node.branches[action] in self.nodes and self.nodes[node.branches[action]].payoffs is not None
-                        else float('-inf')
-                    )
-                    node.best_action = best_action
-            else:
-                # If no branches exist, skip to avoid errors
-                print(f"Warning: Node {node_id} has no branches, skipping...")
+        optimal_nodes = set()  # Store optimal nodes
+        optimal_edges = set()  # Store optimal edges (as (start_node, end_node))
+
+        # Start backward induction
+        while True:
+            decided_this_round = set()
+
+            for node_id, node in self.nodes.items():
+                if node.status == "undecided":
+                    all_decided = True
+                    for action, next_node_id in node.branches.items():
+                        next_node = self.nodes[next_node_id]
+                        if next_node.status == "undecided":
+                            all_decided = False
+                            break
+
+                    print(f"Processing Node {node_id}: Status: {node.status}, Actions: {node.actions}, Branches: {node.branches}")
+
+                    if all_decided:
+                        best_action = None
+                        if node.player == "A":
+                            # For player A, choose the action that maximizes their payoff
+                            best_action = max(
+                                node.branches,
+                                key=lambda action: self.nodes[node.branches[action]].payoffs[0]
+                                if self.nodes[node.branches[action]].payoffs else float('-inf')
+                            )
+                        elif node.player == "B":
+                            # For player B, choose the action that maximizes their payoff
+                            best_action = max(
+                                node.branches,
+                                key=lambda action: self.nodes[node.branches[action]].payoffs[1]
+                                if self.nodes[node.branches[action]].payoffs else float('-inf')
+                            )
+
+                        # Ensure the best action was actually selected
+                        if best_action is not None:
+                            node.best_action = best_action
+                            node.status = "decided"
+                            optimal_nodes.add(node.id)
+                            decided_this_round.add(node.id)
+
+                            print(f"Best action: {best_action}, Node {node_id} decided, Next node: {node.branches[best_action]}")
+                        else:
+                            print(f"Warning: No best action found at Node {node_id}, skipping...")
+
+            if not decided_this_round:
+                break  # If no node was decided in this round, we are done
+
+        # After all nodes are decided, compute the optimal edges
+        for node_id, node in self.nodes.items():
+            if node.status == "decided":
+                next_node_id = node.branches[node.best_action]
+                optimal_edges.add((node.id, next_node_id))
+
+        print("Optimal nodes:", optimal_nodes)
+        print("Optimal edges:", optimal_edges)
+        return optimal_nodes, optimal_edges
 
 
 
-    def visualize(self):
+
+    def visualize(self, optimal_nodes, optimal_edges):
         """
-        Visualize the game tree.
-        可视化博弈树
+        Visualize the game tree, highlighting the optimal path.
+        可视化博弈树，并突出显示最优解路径
         """
         G = nx.DiGraph()  # Create a directed graph to represent the game tree
         
+        # Add nodes and edges to the graph
         for node_id, node in self.nodes.items():
             G.add_node(node.id, label=node.id)  # Add each node to the graph with its ID as label
             if node.payoffs:
@@ -92,7 +125,7 @@ class GameTree:
             for action, next_node_id in node.branches.items():
                 G.add_edge(node.id, next_node_id, label=action)  # Add edges for the actions
 
-        pos = nx.spring_layout(G)  # Using spring layout to position the nodes in a visually appealing way
+        pos = nx.spring_layout(G)  # Using spring layout for layout
         labels = nx.get_edge_attributes(G, 'label')  # Get the edge labels (actions)
         
         # Draw the game tree with nodes and labels
@@ -100,17 +133,30 @@ class GameTree:
         # 绘制节点，设置节点大小、颜色、字体等属性
         nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)  # Draw edge labels (actions)
 
+        # Highlight optimal path nodes (color them pink) and optimal path edges (make them thicker)
+        for node_id in self.nodes:
+            if node_id in optimal_nodes:
+                nx.draw_networkx_nodes(G, pos, nodelist=[node_id], node_color="pink", node_size=3000)
+                # 高亮最优节点，粉色填充
+
+        for edge in G.edges:
+            if edge in optimal_edges:
+                nx.draw_networkx_edges(G, pos, edgelist=[edge], width=2, edge_color="black")
+                # 高亮最优边，设置边宽和颜色
+
         # Add payoff information at node positions
         for node_id, node in self.nodes.items():
             if node.payoffs:
                 x, y = pos[node_id]
-                # Adjust the payoff label slightly downwards to create space between terminal node and payoff
                 plt.text(x, y - 0.1, f"A: {node.payoffs[0]}, B: {node.payoffs[1]}", fontsize=9, ha='center')
-                # 在节点位置显示收益信息，位移量是0.1，避免和节点标签重叠
+                # 显示收益信息，位移量是0.1，避免和节点标签重叠
 
-        plt.title("Game Tree Visualization")  # Set the title of the plot
+        plt.title("Game Tree Visualization with Optimal Path Highlighted")  # Set the title of the plot
         # 设置图形标题
         plt.show()
+
+
+
 
 # Parse function assuming you have the correct parsing logic
 def parse_game_tree_from_file(filename):
@@ -180,6 +226,7 @@ def parse_game_tree_from_file(filename):
                 payoffs = (0, 0)
             
             node = Node(node_id, "None", [], None, payoffs)  # Create a terminal node
+            node.status = "decided"  # Set the terminal node's status to "decided"
             game_tree.add_node(node)  # Add the terminal node to the game tree
             node_map[node_id] = node  # Store the terminal node for easy reference
         
@@ -187,24 +234,6 @@ def parse_game_tree_from_file(filename):
     
     return game_tree
 
-def print_game_tree(game_tree):
-    """
-    Print the structured content of the game tree for debugging purposes.
-    输出博弈树的结构化内容，便于调试
-    """
-    for node_id, node in game_tree.nodes.items():
-        if node.payoffs:
-            print(f"{node_id}:")
-            print(f"  Payoff: {node.payoffs}")
-        else:
-            print(f"{node_id}:")
-            print(f"  Decision Maker: {node.player}")
-            print(f"  Actions: {node.actions}")
-            if node.branches:
-                print(f"  Subsequent:")
-                for action, next_node in node.branches.items():
-                    print(f"    {action} -> {next_node}")
-    # 输出博弈树的结构，包含每个节点的信息
 
 
 def output_game_tree_solution(game_tree, start_node_id):
@@ -224,31 +253,33 @@ def output_game_tree_solution(game_tree, start_node_id):
             print(" -> ".join(path) + f" -> Terminal Node {node.id}: A's payoff = {node.payoffs[0]}, B's payoff = {node.payoffs[1]}")
             # 输出路径并显示终点节点的收益
         else:
+            # Check if best_action is None (i.e., if the node is not decided yet)
+            if node.best_action is None:
+                print(f"Warning: No best action found at Node {node.id}, skipping...")
+                return  # Skip if no best action is found
+            
             # Otherwise, follow the best action and continue to the next node
             action = node.best_action
             next_node_id = node.branches[action]  # Get the next node based on the best action
             print(f"At Node {node.id}, Decision Maker: {node.player}, Action chosen: {action}")
             # 打印当前节点的选择
-            traverse(next_node_id, path + [f"Action {action} -> Node {next_node_id}"])
-            # 递归调用，追踪后续节点
+            traverse(next_node_id, path + [f"Action {action} -> Node {next_node_id}"])  # 递归调用，追踪后续节点
 
     # Start traversal from the given start node
     traverse(start_node_id, [f"Node {start_node_id}"])
     # 从起始节点开始遍历，并显示路径
 
+
+
 # Example code: How to parse, solve, and visualize the game tree
 filename = 'game_tree.txt'  # Assuming the file name is game_tree.txt
 game_tree = parse_game_tree_from_file(filename)
 
-# Print the game tree content
-print_game_tree(game_tree)
-
-# Visualize the game tree
-#game_tree.visualize()
-
-# Solve the Nash equilibrium of the game tree
-game_tree.solve_nash_equilibrium()
+# Solve the Nash equilibrium and get the optimal nodes and edges
+optimal_nodes, optimal_edges = game_tree.solve_nash_equilibrium()
 
 # Output the game tree solution starting from the initial node (e.g., Node 1)
 output_game_tree_solution(game_tree, "Node 1")
 
+# Visualize the game tree, highlighting the optimal path
+game_tree.visualize(optimal_nodes, optimal_edges)
