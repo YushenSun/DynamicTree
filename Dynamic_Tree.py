@@ -24,7 +24,6 @@ class Node:
         self.best_action = None  # The best action for the node once it's decided
         self.is_leaf = is_leaf  # Flag to indicate if it's a leaf node
 
-
 class GameTree:
     def __init__(self):
         """
@@ -120,8 +119,13 @@ class GameTree:
         
         # Add nodes and edges to the graph
         for node_id, node in self.nodes.items():
-            G.add_node(node.id, label=node.id)  # Add each node to the graph with its ID as label
-            if node.payoffs:
+            label = node.id  # Default label is just the node ID
+            # If it's a decision node, append the player information to the label
+            if not node.is_leaf:
+                label += f" ({node.player})"  # Add player (A or B) to the label for decision nodes
+            
+            G.add_node(node.id, label=label)  # Add each node to the graph with its ID as label
+            if node.is_leaf:
                 G.nodes[node.id]['payoffs'] = node.payoffs  # Store the payoffs at the node
             
             # Add edges based on branches to represent the transitions between nodes
@@ -130,9 +134,10 @@ class GameTree:
 
         pos = nx.spring_layout(G)  # Using spring layout for layout
         labels = nx.get_edge_attributes(G, 'label')  # Get the edge labels (actions)
+        node_labels = nx.get_node_attributes(G, 'label')  # Get the node labels (IDs + players for decision nodes)
         
         # Draw the game tree with nodes and labels
-        nx.draw(G, pos, with_labels=True, node_size=3000, node_color="lightblue", font_size=10, font_weight='bold', arrows=True)
+        nx.draw(G, pos, with_labels=True, labels=node_labels, node_size=3000, node_color="lightblue", font_size=10, font_weight='bold', arrows=True)
         # 绘制节点，设置节点大小、颜色、字体等属性
         nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)  # Draw edge labels (actions)
 
@@ -157,8 +162,6 @@ class GameTree:
         plt.title("Game Tree Visualization with Optimal Path Highlighted")  # Set the title of the plot
         # 设置图形标题
         plt.show()
-
-
 
 
 # Parse function assuming you have the correct parsing logic
@@ -237,8 +240,6 @@ def parse_game_tree_from_file(filename):
     
     return game_tree
 
-
-
 def output_game_tree_solution(game_tree, start_node_id):
     """
     Output the solution of the game tree in a readable text format.
@@ -273,11 +274,6 @@ def output_game_tree_solution(game_tree, start_node_id):
     # Start traversal from the given start node and display the entire path
     traverse(start_node_id, [f"Node {start_node_id}"])
     # 从起始节点开始遍历，并显示路径
-
-
-
-
-
 
 # Example code: How to parse, solve, and visualize the game tree
 filename = 'game_tree.txt'  # Assuming the file name is game_tree.txt
