@@ -110,59 +110,52 @@ class GameTree:
         print("Optimal edges:", optimal_edges)
         return optimal_nodes, optimal_edges
 
-    def visualize(self, optimal_nodes, optimal_edges):
+    def visualize(self, ultimate_nodes, ultimate_actions):
         """
-        Visualize the game tree, highlighting the optimal path.
-        可视化博弈树，并突出显示最优解路径
+        Visualize the game tree, highlighting the ultimate path.
+        可视化博弈树，并突出显示最终最优路径（仅高亮输出路径中的节点和边）。
         """
-        G = nx.DiGraph()  # Create a directed graph to represent the game tree
+        G = nx.DiGraph()  # 创建有向图来表示博弈树
         
-        # Add nodes and edges to the graph
+        # 将所有节点和边加入图中
         for node_id, node in self.nodes.items():
-            label = node.id  # Default label is just the node ID
-            # If it's a decision node, append the player information to the label
+            # 如果是决策节点，在标签中显示玩家信息
+            label = node.id
             if not node.is_leaf:
-                label += f" ({node.player})"  # Add player (A or B) to the label for decision nodes
+                label += f" ({node.player})"
+            G.add_node(node.id, label=label)
+            if node.payoffs:
+                G.nodes[node.id]['payoffs'] = node.payoffs
             
-            G.add_node(node.id, label=label)  # Add each node to the graph with its ID as label
-            if node.is_leaf:
-                G.nodes[node.id]['payoffs'] = node.payoffs  # Store the payoffs at the node
-            
-            # Add edges based on branches to represent the transitions between nodes
             for action, next_node_id in node.branches.items():
-                G.add_edge(node.id, next_node_id, label=action)  # Add edges for the actions
-
-        pos = nx.spring_layout(G)  # Using spring layout for layout
-        labels = nx.get_edge_attributes(G, 'label')  # Get the edge labels (actions)
-        node_labels = nx.get_node_attributes(G, 'label')  # Get the node labels (IDs + players for decision nodes)
+                G.add_edge(node.id, next_node_id, label=action)
         
-        # Draw the game tree with nodes and labels
-        nx.draw(G, pos, with_labels=True, labels=node_labels, node_size=3000, node_color="lightblue", font_size=10, font_weight='bold', arrows=True)
-        # 绘制节点，设置节点大小、颜色、字体等属性
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)  # Draw edge labels (actions)
-
-        # Highlight optimal path nodes (color them pink) and optimal path edges (make them thicker)
-        for node_id in self.nodes:
-            if node_id in optimal_nodes:
-                nx.draw_networkx_nodes(G, pos, nodelist=[node_id], node_color="pink", node_size=3000)
-                # 高亮最优节点，粉色填充
-
-        for edge in G.edges:
-            if edge in optimal_edges:
-                nx.draw_networkx_edges(G, pos, edgelist=[edge], width=2, edge_color="black")
-                # 高亮最优边，设置边宽和颜色
-
-        # Add payoff information at node positions
+        pos = nx.spring_layout(G)  # 使用 spring 布局
+        edge_labels = nx.get_edge_attributes(G, 'label')
+        node_labels = nx.get_node_attributes(G, 'label')
+        
+        # 绘制全部图
+        nx.draw(G, pos, with_labels=True, labels=node_labels, node_size=3000,
+                node_color="lightblue", font_size=10, font_weight='bold', arrows=True)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+        
+        # 高亮最终路径的节点（使用 ultimate_nodes 列表）
+        for node_id in ultimate_nodes:
+            nx.draw_networkx_nodes(G, pos, nodelist=[node_id], node_color="pink", node_size=3000)
+        
+        # 高亮最终路径的边：使用 ultimate_nodes 列表的相邻节点构造边
+        for i in range(len(ultimate_nodes) - 1):
+            edge = (ultimate_nodes[i], ultimate_nodes[i+1])
+            nx.draw_networkx_edges(G, pos, edgelist=[edge], width=2, edge_color="black")
+        
+        # 显示每个节点的收益信息
         for node_id, node in self.nodes.items():
             if node.payoffs:
                 x, y = pos[node_id]
                 plt.text(x, y - 0.1, f"A: {node.payoffs[0]}, B: {node.payoffs[1]}", fontsize=9, ha='center')
-                # 显示收益信息，位移量是0.1，避免和节点标签重叠
-
-        plt.title("Game Tree Visualization with Optimal Path Highlighted")  # Set the title of the plot
-        # 设置图形标题
+        
+        plt.title("Game Tree Visualization with Ultimate Path Highlighted")
         plt.show()
-
 
 # Parse function assuming you have the correct parsing logic
 def parse_game_tree_from_file(filename):
@@ -244,7 +237,11 @@ def output_game_tree_solution(game_tree, start_node_id):
     """
     Output the solution of the game tree in a readable text format.
     输出博弈树求解结果，以文字形式展示每个节点的选择以及最终的收益值。
+    Also return the ultimate nodes and actions.
     """
+    ultimate_nodes = []  # Store the nodes in the optimal solution path
+    ultimate_actions = []  # Store the actions in the optimal solution path
+
     def traverse(node_id, path):
         """
         Recursively traverse the game tree, building the path and printing the choices.
@@ -255,6 +252,7 @@ def output_game_tree_solution(game_tree, start_node_id):
         # If it's a leaf node, print the path and the payoffs
         if node.is_leaf:
             print(" -> ".join(path) + f" -> Terminal Node {node.id}: A's payoff = {node.payoffs[0]}, B's payoff = {node.payoffs[1]}")
+            ultimate_nodes.append(node.id)
         else:
             # If the node has a best action, follow it
             if node.best_action is None:
@@ -264,7 +262,8 @@ def output_game_tree_solution(game_tree, start_node_id):
             # Otherwise, follow the best action and continue to the next node
             action = node.best_action
             next_node_id = node.branches[action]  # Get the next node based on the best action
-            
+            ultimate_nodes.append(node.id)
+            ultimate_actions.append(action)
             print(f"At Node {node.id}, Decision Maker: {node.player}, Action chosen: {action}")
             # 打印当前节点的选择
             
@@ -274,6 +273,8 @@ def output_game_tree_solution(game_tree, start_node_id):
     # Start traversal from the given start node and display the entire path
     traverse(start_node_id, [f"Node {start_node_id}"])
     # 从起始节点开始遍历，并显示路径
+    
+    return ultimate_nodes, ultimate_actions  # Return the nodes and actions in the optimal solution path
 
 # Example code: How to parse, solve, and visualize the game tree
 filename = 'game_tree.txt'  # Assuming the file name is game_tree.txt
@@ -285,5 +286,8 @@ optimal_nodes, optimal_edges = game_tree.solve_nash_equilibrium()
 # Output the game tree solution starting from the initial node (e.g., Node 1)
 output_game_tree_solution(game_tree, "Node 1")
 
-# Visualize the game tree, highlighting the optimal path
-game_tree.visualize(optimal_nodes, optimal_edges)
+# Output the game tree solution starting from the initial node (e.g., Node 1)
+ultimate_nodes, ultimate_actions = output_game_tree_solution(game_tree, "Node 1")
+
+# Visualize the game tree, highlighting the ultimate path
+game_tree.visualize(ultimate_nodes, ultimate_actions)

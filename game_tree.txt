@@ -3,20 +3,60 @@ Node 1:
   Actions: [L, R]
   Subsequent:
     L -> Node 2
-    R ->Terminal Node 3
+    R -> Node 3
 
 Node 2:
   Decision Maker: B
   Actions: [U, D]
   Subsequent:
-    U -> Terminal Node 1
-    D -> Terminal Node 2
+    U -> Node 4
+    D -> Node 5
+
+Node 3:
+  Decision Maker: A
+  Actions: [U, D]
+  Subsequent:
+    U -> Node 6
+    D -> Terminal Node 7
+
+Node 4:
+  Decision Maker: A
+  Actions: [L, R]
+  Subsequent:
+    L -> Terminal Node 1
+    R -> Terminal Node 2
+
+Node 5:
+  Decision Maker: B
+  Actions: [U, D]
+  Subsequent:
+    U -> Terminal Node 3
+    D -> Terminal Node 4
+
+Node 6:
+  Decision Maker: B
+  Actions: [L, R]
+  Subsequent:
+    L -> Terminal Node 5
+    R -> Terminal Node 6
 
 Terminal Node 1:
   Payoff: (3, 2)
 
 Terminal Node 2:
-  Payoff: (1, 4)
+  Payoff: (5, 1)
 
 Terminal Node 3:
+  Payoff: (2, 3)
+
+Terminal Node 4:
+  Payoff: (1, 4)
+
+Terminal Node 5:
+  Payoff: (6, 0)
+
+Terminal Node 6:
+  Payoff: (4, 2)
+
+Terminal Node 7:
   Payoff: (0, 5)
