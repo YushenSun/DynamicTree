@@ -88,9 +88,14 @@ class GameTree:
                             optimal_nodes.add(node.id)
                             decided_this_round.add(node.id)
 
-                            print(f"Best action: {best_action}, Node {node_id} decided, Next node: {node.branches[best_action]}")
-                        else:
-                            print(f"Warning: No best action found at Node {node_id}, skipping...")
+                            # Propagate the best action's payoff back to the current node
+                            next_node_id = node.branches[best_action]
+                            next_node = self.nodes[next_node_id]
+                            if next_node.payoffs:
+                                node.payoffs = next_node.payoffs
+                                print(f"Node {node_id} decided, Next node: {next_node_id}, Payoff: {node.payoffs}")
+                            else:
+                                print(f"Warning: Next node {next_node_id} has no payoffs")
 
             if not decided_this_round:
                 break  # If no node was decided in this round, we are done
@@ -104,6 +109,7 @@ class GameTree:
         print("Optimal nodes:", optimal_nodes)
         print("Optimal edges:", optimal_edges)
         return optimal_nodes, optimal_edges
+
 
 
 
