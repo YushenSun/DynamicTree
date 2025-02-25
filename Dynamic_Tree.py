@@ -10,7 +10,7 @@ matplotlib.rcParams['axes.unicode_minus'] = False  # To display negative signs
 
 # Node class definition
 class Node:
-    def __init__(self, id, player, actions, branches=None, payoffs=None):
+    def __init__(self, id, player, actions, branches=None, payoffs=None, is_leaf=False):
         """
         Initialize a node in the game tree.
         初始化博弈树中的一个节点
@@ -22,6 +22,7 @@ class Node:
         self.payoffs = payoffs  # For leaf nodes, contains (A payoff, B payoff)
         self.status = "undecided"  # Node status: "undecided" or "decided"
         self.best_action = None  # The best action for the node once it's decided
+        self.is_leaf = is_leaf  # Flag to indicate if it's a leaf node
 
 
 class GameTree:
@@ -227,7 +228,7 @@ def parse_game_tree_from_file(filename):
             except IndexError:
                 payoffs = (0, 0)
             
-            node = Node(node_id, "None", [], None, payoffs)  # Create a terminal node
+            node = Node(node_id, "None", [], None, payoffs, is_leaf=True)  # Mark as leaf node
             node.status = "decided"  # Set the terminal node's status to "decided"
             game_tree.add_node(node)  # Add the terminal node to the game tree
             node_map[node_id] = node  # Store the terminal node for easy reference
@@ -250,11 +251,9 @@ def output_game_tree_solution(game_tree, start_node_id):
         """
         node = game_tree.nodes[node_id]  # Get the current node
         
-        # Check if it's a terminal node
-        if node.payoffs:
-            # If it's a terminal node, print the path and the payoffs
+        # If it's a leaf node, print the path and the payoffs
+        if node.is_leaf:
             print(" -> ".join(path) + f" -> Terminal Node {node.id}: A's payoff = {node.payoffs[0]}, B's payoff = {node.payoffs[1]}")
-            # 输出路径并显示终点节点的收益
         else:
             # If the node has a best action, follow it
             if node.best_action is None:
@@ -265,7 +264,6 @@ def output_game_tree_solution(game_tree, start_node_id):
             action = node.best_action
             next_node_id = node.branches[action]  # Get the next node based on the best action
             
-            # Add the action to the path and print the decision maker's choice
             print(f"At Node {node.id}, Decision Maker: {node.player}, Action chosen: {action}")
             # 打印当前节点的选择
             
@@ -275,6 +273,7 @@ def output_game_tree_solution(game_tree, start_node_id):
     # Start traversal from the given start node and display the entire path
     traverse(start_node_id, [f"Node {start_node_id}"])
     # 从起始节点开始遍历，并显示路径
+
 
 
 
