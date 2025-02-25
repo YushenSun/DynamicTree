@@ -1,19 +1,19 @@
-节点 1:
-  决策者: A
-  行动: [L, R]
-  后续:
-    L -> 节点 2
-    R -> 节点 3
+Node 1:
+  Decision Maker: A
+  Actions: [L, R]
+  Subsequent:
+    L -> Node 2
+    R -> Node 3
 
-节点 2:
-  决策者: B
-  行动: [U, D]
-  后续:
-    U -> 终点节点 1
-    D -> 终点节点 2
+Node 2:
+  Decision Maker: B
+  Actions: [U, D]
+  Subsequent:
+    U -> Terminal Node 1
+    D -> Terminal Node 2
 
-终点节点 1:
-  收益: (3, 2)
+Terminal Node 1:
+  Payoff: (3, 2)
 
-终点节点 2:
-  收益: (1, 4)
+Terminal Node 2:
+  Payoff: (1, 4)

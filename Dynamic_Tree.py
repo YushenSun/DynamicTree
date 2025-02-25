@@ -2,13 +2,11 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib
 import re
+from matplotlib import font_manager
 
-# 使用系统字体路径手动设置中文字体（适用于 Windows）
-matplotlib.rcParams['font.family'] = 'STHeiti'  # 指定字体为微软雅黑
-matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
-
-# 如果你希望使用其他字体，可以设置其路径
-# matplotlib.font_manager.fontManager.addfont('C:/Windows/Fonts/msyh.ttc')
+# Manually load the font for English
+matplotlib.rcParams['font.family'] = 'Arial'  # Using Arial font
+matplotlib.rcParams['axes.unicode_minus'] = False  # To display negative signs
 
 class Node:
     def __init__(self, id, player, actions, branches=None, payoffs=None):
@@ -27,26 +25,22 @@ class GameTree:
 
     def solve_nash_equilibrium(self):
         """
-        使用逆向归纳法求解博弈树中的纳什均衡。
+        Use backward induction to solve the Nash equilibrium in the game tree.
         """
-        # 从叶子节点开始逆向归纳
-        for node_id in sorted(self.nodes.keys(), reverse=True):  # 假设节点ID为数字，逆序处理
+        for node_id in sorted(self.nodes.keys(), reverse=True):  # Assume node IDs are numeric, process in reverse order
             node = self.nodes[node_id]
             if node.payoffs:
-                continue  # 如果是叶子节点，直接跳过
-            # 根据后续节点的收益来计算最优选择
+                continue  # Skip if it's a leaf node
             if node.player == 'A':
-                # A选择最大化收益
                 best_action = max(node.branches, key=lambda action: self.nodes[node.branches[action]].payoffs[0])
                 node.best_action = best_action
             elif node.player == 'B':
-                # B选择最大化收益
                 best_action = max(node.branches, key=lambda action: self.nodes[node.branches[action]].payoffs[1])
                 node.best_action = best_action
 
     def visualize(self):
         """
-        可视化博弈树
+        Visualize the game tree
         """
         G = nx.DiGraph()
         
@@ -58,34 +52,34 @@ class GameTree:
             for action, next_node_id in node.branches.items():
                 G.add_edge(node.id, next_node_id, label=action)
 
-        pos = nx.spring_layout(G)  # 使用spring_layout布局
+        pos = nx.spring_layout(G)  # Using spring_layout for layout
         labels = nx.get_edge_attributes(G, 'label')
         
-        # 绘制博弈树
+        # Draw the game tree
         nx.draw(G, pos, with_labels=True, node_size=3000, node_color="lightblue", font_size=10, font_weight='bold', arrows=True)
         nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
 
-        # 在节点位置添加支付信息
+        # Add payoff information at node positions
         for node_id, node in self.nodes.items():
             if node.payoffs:
                 x, y = pos[node_id]
                 plt.text(x, y, f"A: {node.payoffs[0]}, B: {node.payoffs[1]}", fontsize=9, ha='center')
 
-        plt.title("Game Tree Visualization 博弈树可视化")
+        plt.title("Game Tree Visualization")
         plt.show()
 
-# 解析函数，假设你已经有了正确的解析逻辑
+# Parse function assuming you have the correct parsing logic
 def parse_game_tree_from_file(filename):
     game_tree = GameTree()
-    node_map = {}  # 用来存储节点，方便引用
+    node_map = {}  # Store nodes for easy reference
     
     with open(filename, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     
-    i = 0  # 用于遍历行的索引
+    i = 0  # Index for line traversal
     while i < len(lines):
         line = lines[i].strip()
-        if line.startswith("节点"):
+        if line.startswith("Node"):
             node_id = line.split(":")[0].strip()
             player = None
             actions = []
@@ -103,9 +97,9 @@ def parse_game_tree_from_file(filename):
             
             branches_line = lines[i + 3].strip()
             branches = {}
-            if "后续" in branches_line:
+            if "Subsequent" in branches_line:
                 j = i + 4
-                while j < len(lines) and not lines[j].startswith("终点节点") and lines[j].strip() != "":
+                while j < len(lines) and not lines[j].startswith("Terminal Node") and lines[j].strip() != "":
                     branch_line = lines[j].strip()
                     if "->" in branch_line:
                         action, next_node = branch_line.split("->")
@@ -117,7 +111,7 @@ def parse_game_tree_from_file(filename):
             game_tree.add_node(node)
             node_map[node_id] = node
         
-        if line.startswith("终点节点"):
+        if line.startswith("Terminal Node"):
             node_id = line.split(":")[0].strip()
             try:
                 payoffs_line = lines[i + 1].strip().split(":")
@@ -144,30 +138,30 @@ def parse_game_tree_from_file(filename):
 
 def print_game_tree(game_tree):
     """
-    输出博弈树的结构化内容，便于调试。
+    Print the structured content of the game tree for debugging purposes.
     """
     for node_id, node in game_tree.nodes.items():
         if node.payoffs:
             print(f"{node_id}:")
-            print(f"  收益: {node.payoffs}")
+            print(f"  Payoff: {node.payoffs}")
         else:
             print(f"{node_id}:")
-            print(f"  决策者: {node.player}")
-            print(f"  行动: {node.actions}")
+            print(f"  Decision Maker: {node.player}")
+            print(f"  Actions: {node.actions}")
             if node.branches:
-                print(f"  后续:") 
+                print(f"  Subsequent:")
                 for action, next_node in node.branches.items():
                     print(f"    {action} -> {next_node}")
 
-# 示例代码：如何使用解析、求解博弈树和可视化功能
-filename = 'game_tree.txt'  # 假设文件名为 game_tree.txt
+# Example code: How to parse, solve, and visualize the game tree
+filename = 'game_tree.txt'  # Assuming the file name is game_tree.txt
 game_tree = parse_game_tree_from_file(filename)
 
-# 输出博弈树内容
+# Print the game tree content
 print_game_tree(game_tree)
 
-# 可视化博弈树
+# Visualize the game tree
 game_tree.visualize()
 
-# 求解博弈树的纳什均衡
+# Solve the Nash equilibrium of the game tree
 #game_tree.solve_nash_equilibrium()
