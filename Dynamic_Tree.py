@@ -44,22 +44,37 @@ class GameTree:
         Use backward induction to solve the Nash equilibrium in the game tree.
         使用逆向归纳法求解博弈树中的纳什均衡
         """
-        for node_id in sorted(self.nodes.keys(), reverse=True):  # Sort nodes in reverse order (from leaf to root)
+        for node_id in sorted(self.nodes.keys(), reverse=True):  # Assume node IDs are numeric, process in reverse order
             node = self.nodes[node_id]  # Get the current node
-            if node.payoffs:
-                continue  # Skip leaf nodes, which already have payoffs
-            # 跳过叶子节点，因为它们已经有收益数据
+            if node.payoffs is not None:
+                continue  # Skip if it's a leaf node with payoffs
+            # 如果是叶子节点，则跳过
+            
+            # Check if the node has valid branches and payoffs for backward induction
+            if node.branches:  # Ensure that the node has branches
+                if node.player == 'A':
+                    # If it's A's turn, A will maximize their payoff
+                    best_action = max(
+                        node.branches, 
+                        key=lambda action: self.nodes[node.branches[action]].payoffs[0] 
+                        if node.branches[action] in self.nodes and self.nodes[node.branches[action]].payoffs is not None
+                        else float('-inf')
+                    )
+                    node.best_action = best_action
+                elif node.player == 'B':
+                    # If it's B's turn, B will maximize their payoff
+                    best_action = max(
+                        node.branches, 
+                        key=lambda action: self.nodes[node.branches[action]].payoffs[1] 
+                        if node.branches[action] in self.nodes and self.nodes[node.branches[action]].payoffs is not None
+                        else float('-inf')
+                    )
+                    node.best_action = best_action
+            else:
+                # If no branches exist, skip to avoid errors
+                print(f"Warning: Node {node_id} has no branches, skipping...")
 
-            if node.player == 'A':
-                # If it's A's turn, A will maximize their payoff
-                best_action = max(node.branches, key=lambda action: self.nodes[node.branches[action]].payoffs[0])
-                node.best_action = best_action
-                # A选择最大化收益的行动
-            elif node.player == 'B':
-                # If it's B's turn, B will maximize their payoff
-                best_action = max(node.branches, key=lambda action: self.nodes[node.branches[action]].payoffs[1])
-                node.best_action = best_action
-                # B选择最大化收益的行动
+
 
     def visualize(self):
         """
@@ -191,6 +206,36 @@ def print_game_tree(game_tree):
                     print(f"    {action} -> {next_node}")
     # 输出博弈树的结构，包含每个节点的信息
 
+
+def output_game_tree_solution(game_tree, start_node_id):
+    """
+    Output the solution of the game tree in a readable text format.
+    输出博弈树求解结果，以文字形式展示每个节点的选择以及最终的收益值。
+    """
+    def traverse(node_id, path):
+        """
+        Recursively traverse the game tree, building the path and printing the choices.
+        递归遍历博弈树，构建路径并打印选择
+        """
+        node = game_tree.nodes[node_id]  # Get the current node
+        
+        if node.payoffs:
+            # If it's a terminal node, print the path and the payoffs
+            print(" -> ".join(path) + f" -> Terminal Node {node.id}: A's payoff = {node.payoffs[0]}, B's payoff = {node.payoffs[1]}")
+            # 输出路径并显示终点节点的收益
+        else:
+            # Otherwise, follow the best action and continue to the next node
+            action = node.best_action
+            next_node_id = node.branches[action]  # Get the next node based on the best action
+            print(f"At Node {node.id}, Decision Maker: {node.player}, Action chosen: {action}")
+            # 打印当前节点的选择
+            traverse(next_node_id, path + [f"Action {action} -> Node {next_node_id}"])
+            # 递归调用，追踪后续节点
+
+    # Start traversal from the given start node
+    traverse(start_node_id, [f"Node {start_node_id}"])
+    # 从起始节点开始遍历，并显示路径
+
 # Example code: How to parse, solve, and visualize the game tree
 filename = 'game_tree.txt'  # Assuming the file name is game_tree.txt
 game_tree = parse_game_tree_from_file(filename)
@@ -199,7 +244,11 @@ game_tree = parse_game_tree_from_file(filename)
 print_game_tree(game_tree)
 
 # Visualize the game tree
-game_tree.visualize()
+#game_tree.visualize()
 
 # Solve the Nash equilibrium of the game tree
-#game_tree.solve_nash_equilibrium()
+game_tree.solve_nash_equilibrium()
+
+# Output the game tree solution starting from the initial node (e.g., Node 1)
+output_game_tree_solution(game_tree, "Node 1")
+

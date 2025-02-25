@@ -17,3 +17,6 @@ Terminal Node 1:
 
 Terminal Node 2:
   Payoff: (1, 4)
+
+Terminal Node 3:
+  Payoff: (0, 5)
