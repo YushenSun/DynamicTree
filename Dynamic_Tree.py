@@ -102,17 +102,13 @@ class GameTree:
 
         # After all nodes are decided, compute the optimal edges
         for node_id, node in self.nodes.items():
-            if node.status == "decided":
+            if node.status == "decided" and node.best_action is not None:  # Ensure best_action exists
                 next_node_id = node.branches[node.best_action]
                 optimal_edges.add((node.id, next_node_id))
 
         print("Optimal nodes:", optimal_nodes)
         print("Optimal edges:", optimal_edges)
         return optimal_nodes, optimal_edges
-
-
-
-
 
     def visualize(self, optimal_nodes, optimal_edges):
         """
