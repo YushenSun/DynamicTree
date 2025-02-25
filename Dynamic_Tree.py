@@ -250,12 +250,13 @@ def output_game_tree_solution(game_tree, start_node_id):
         """
         node = game_tree.nodes[node_id]  # Get the current node
         
+        # Check if it's a terminal node
         if node.payoffs:
             # If it's a terminal node, print the path and the payoffs
             print(" -> ".join(path) + f" -> Terminal Node {node.id}: A's payoff = {node.payoffs[0]}, B's payoff = {node.payoffs[1]}")
             # 输出路径并显示终点节点的收益
         else:
-            # Check if best_action is None (i.e., if the node is not decided yet)
+            # If the node has a best action, follow it
             if node.best_action is None:
                 print(f"Warning: No best action found at Node {node.id}, skipping...")
                 return  # Skip if no best action is found
@@ -263,13 +264,19 @@ def output_game_tree_solution(game_tree, start_node_id):
             # Otherwise, follow the best action and continue to the next node
             action = node.best_action
             next_node_id = node.branches[action]  # Get the next node based on the best action
+            
+            # Add the action to the path and print the decision maker's choice
             print(f"At Node {node.id}, Decision Maker: {node.player}, Action chosen: {action}")
             # 打印当前节点的选择
-            traverse(next_node_id, path + [f"Action {action} -> Node {next_node_id}"])  # 递归调用，追踪后续节点
+            
+            # Add this action to the path and recurse to the next node
+            traverse(next_node_id, path + [f"Action {action} -> Node {next_node_id}"])  # Recursively continue to the next node
 
-    # Start traversal from the given start node
+    # Start traversal from the given start node and display the entire path
     traverse(start_node_id, [f"Node {start_node_id}"])
     # 从起始节点开始遍历，并显示路径
+
+
 
 
 
