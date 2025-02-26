@@ -150,7 +150,8 @@ class GameTree:
         
         # 显示每个节点的收益信息
         for node_id, node in self.nodes.items():
-            if node.payoffs:
+            if node.payoffs: # 在所有节点显示收益信息
+            #if node.is_leaf: # 仅在叶子节点显示收益信息
                 x, y = pos[node_id]
                 plt.text(x, y - 0.1, f"A: {node.payoffs[0]}, B: {node.payoffs[1]}", fontsize=9, ha='center')
         
