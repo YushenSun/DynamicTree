@@ -2,7 +2,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib
 import re
-from matplotlib import font_manager
 
 # Manually load the font for English
 matplotlib.rcParams['font.family'] = 'Arial'  # Using Arial font
@@ -56,7 +55,7 @@ class GameTree:
             for node_id, node in self.nodes.items():
                 if node.status == "undecided":
                     all_decided = True
-                    for action, next_node_id in node.branches.items():
+                    for next_node_id in node.branches.items():
                         next_node = self.nodes[next_node_id]
                         if next_node.status == "undecided":
                             all_decided = False
