@@ -55,7 +55,7 @@ class GameTree:
             for node_id, node in self.nodes.items():
                 if node.status == "undecided":
                     all_decided = True
-                    for next_node_id in node.branches.items():
+                    for actions, next_node_id in node.branches.items():
                         next_node = self.nodes[next_node_id]
                         if next_node.status == "undecided":
                             all_decided = False
